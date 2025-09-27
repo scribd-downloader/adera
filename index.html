@@ -957,6 +957,41 @@
         document.getElementById('year').textContent = new Date().getFullYear();
         </script>
     </footer>
+        <!-- ForeMedia diagnostic helper: logs script load errors and watches ad containers -->
+        <script>
+        (function(){
+            try {
+                var fmScripts = Array.from(document.querySelectorAll('script[src*="platform.foremedia.net"]'));
+                if(fmScripts.length) {
+                    fmScripts.forEach(function(s){
+                        s.addEventListener('load', function(){ console.log('[foremedia-diag] script loaded:', s.src); });
+                        s.addEventListener('error', function(){ console.error('[foremedia-diag] script FAILED to load:', s.src); });
+                    });
+                } else {
+                    console.warn('[foremedia-diag] no foremedia script tags found on page');
+                }
+
+                var fmDivs = Array.from(document.querySelectorAll('div[id^="foremediaads-"]'));
+                if(!fmDivs.length) console.warn('[foremedia-diag] no foremedia ad containers found');
+                fmDivs.forEach(function(d){
+                    function logState(){
+                        try{
+                            var rect = d.getBoundingClientRect();
+                            console.log('[foremedia-diag] container', d.id, 'children=', d.children.length, 'size=', rect.width+'x'+rect.height);
+                        }catch(e){ console.log('[foremedia-diag] container', d.id, 'children=', d.children.length); }
+                    }
+                    logState();
+                    var mo = new MutationObserver(function(muts){
+                        console.log('[foremedia-diag] mutation in', d.id, muts);
+                        logState();
+                    });
+                    mo.observe(d, { childList: true, subtree: true, attributes: true });
+                    // Warn after 5s if still empty
+                    setTimeout(function(){ if(d.children.length===0) console.warn('[foremedia-diag] no ad content detected in', d.id, 'after 5s'); }, 5000);
+                });
+            } catch(err) { console.error('[foremedia-diag] error running diagnostics', err); }
+        })();
+        </script>
 </body>
 </html>
 
